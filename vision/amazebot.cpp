@@ -224,7 +224,7 @@ void trackFilteredObject(Mat threshold,Mat HSV, Mat &cameraFeed){
 int main(int argc, char* argv[])
 {
 	//if we would like to calibrate our filter values, set to true.
-	bool calibrationMode = true;
+	bool calibrationMode = false;
 
 	//read calibrated data from file
 
@@ -244,11 +244,20 @@ int main(int argc, char* argv[])
   		}
 	else cout << "Unable to open file"; 
 
-	cout <<"Numbers:\n";
-	for (int i=0; i < numbers.size(); i++) 
+	//check if there are 6 values then add it to the calibration
+	if(numbers.size()==6)
+	for (int i=0; i < numbers.size()/6; i++) 
 	{
-		cout << numbers[i] << '\n';
+		H_MIN = numbers[i];
+		H_MAX = numbers[i+1];
+		S_MIN = numbers[i+2];
+		S_MAX = numbers[i+3];
+		V_MIN = numbers[i+4];
+		V_MAX = numbers[i+5];
+	cout<<"Added paper colors from calibration file \n";
 	}
+
+
 	
 	//Matrix to store each frame of the webcam feed
 	Mat cameraFeed;
@@ -274,13 +283,12 @@ int main(int argc, char* argv[])
 		//convert frame from BGR to HSV colorspace
 		cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
 
-		if(calibrationMode==true){
-		//if in calibration mode, we track objects based on the HSV slider values.
+
+		//track objects based on the HSV values.
 		inRange(HSV,Scalar(H_MIN,S_MIN,V_MIN),Scalar(H_MAX,S_MAX,V_MAX),threshold);
 		morphOps(threshold);
 		imshow(windowName2,threshold);
 		trackFilteredObject(threshold,HSV,cameraFeed);
-		}
 
 		//show frames 
 		//imshow(windowName2,threshold);
