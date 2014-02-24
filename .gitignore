@@ -11,3 +11,10 @@
 *.lai
 *.la
 *.a
+
+# Build folders
+
+.classpath
+.settings
+.project
+build
