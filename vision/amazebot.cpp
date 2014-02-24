@@ -229,16 +229,26 @@ int main(int argc, char* argv[])
 	//read calibrated data from file
 
 	string paperColors;
+	vector<int> numbers;
+	int number;
+
 	ifstream calibrationFile ("paperColors.txt");
 	if (calibrationFile.is_open())
 		{
-		while ( getline (calibrationFile,paperColors) )
+		while ( calibrationFile >> number)
 			{
-      			cout << paperColors << '\n';
+      				numbers.push_back(number);
+				calibrationFile.get();
     			}
     		calibrationFile.close();
   		}
 	else cout << "Unable to open file"; 
+
+	cout <<"Numbers:\n";
+	for (int i=0; i < numbers.size(); i++) 
+	{
+		cout << numbers[i] << '\n';
+	}
 	
 	//Matrix to store each frame of the webcam feed
 	Mat cameraFeed;
