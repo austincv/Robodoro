@@ -16,11 +16,13 @@
 #include <sstream>
 #include <string>
 #include <iostream>
+#include <fstream>
 #include <stdio.h>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/opencv.hpp>
 
 using namespace cv;
+using namespace std;
 //initial min and max HSV filter values.
 //these will be changed using trackbars
 int H_MIN = 0;
@@ -223,6 +225,20 @@ int main(int argc, char* argv[])
 {
 	//if we would like to calibrate our filter values, set to true.
 	bool calibrationMode = true;
+
+	//read calibrated data from file
+
+	string paperColors;
+	ifstream calibrationFile ("paperColors.txt");
+	if (calibrationFile.is_open())
+		{
+		while ( getline (calibrationFile,paperColors) )
+			{
+      			cout << paperColors << '\n';
+    			}
+    		calibrationFile.close();
+  		}
+	else cout << "Unable to open file"; 
 	
 	//Matrix to store each frame of the webcam feed
 	Mat cameraFeed;
