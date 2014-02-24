@@ -1,6 +1,6 @@
-//objectTrackingTutorial.cpp
+//amazebot.cpp
 
-//Written by  Kyle Hounslow 2013
+//Template from objectTrackingTutorial written by  Kyle Hounslow 2013
 
 //Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software")
 //, to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
@@ -250,7 +250,6 @@ int main(int argc, char* argv[])
 
 		if(calibrationMode==true){
 		//if in calibration mode, we track objects based on the HSV slider values.
-		cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
 		inRange(HSV,Scalar(H_MIN,S_MIN,V_MIN),Scalar(H_MAX,S_MAX,V_MAX),threshold);
 		morphOps(threshold);
 		imshow(windowName2,threshold);
