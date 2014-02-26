@@ -54,6 +54,8 @@ class Paper
 public:
 	Paper(void)
 	{
+		HSV_min = Scalar(0,0,0);
+		HSV_max = Scalar(256,256,256);
 	}
 	~Paper(void)
 	{
@@ -80,6 +82,8 @@ private:
 
 	int xPos, yPos;
 	string type;
+	Scalar HSV_min;
+	Scalar HSV_max;
 
 };
 
@@ -116,6 +120,7 @@ void createTrackbars(){
 	sprintf( TrackbarName, "S_MAX", S_MAX);
 	sprintf( TrackbarName, "V_MIN", V_MIN);
 	sprintf( TrackbarName, "V_MAX", V_MAX);
+	
 	//create trackbars and insert them into window
 	//3 parameters are: the address of the variable that is changing when the trackbar is moved(eg.H_LOW),
 	//the max value the trackbar can move (eg. H_HIGH), 
