@@ -77,6 +77,22 @@ public:
 	{
 		yPos = y;
 	}
+	Scalar getHSV_min()
+	{
+		return HSV_min;
+	}
+	Scalar getHSV_max()
+	{
+		return HSV_max;
+	}
+	void setHSV_min(Scalar min)
+	{
+		HSV_min = min;
+	}
+	void setHSV_max(Scalar max)
+	{
+		HSV_max = max;
+	}
 	
 private:
 
@@ -114,13 +130,14 @@ void createTrackbars(){
 	namedWindow(trackbarWindowName,0);
 	//create memory to store trackbar name on window
 	char TrackbarName[50];
-	sprintf( TrackbarName, "H_MIN", H_MIN);
+	//not so sure why the template used the following, commenting it for now
+	/*sprintf( TrackbarName, "H_MIN", H_MIN);
 	sprintf( TrackbarName, "H_MAX", H_MAX);
 	sprintf( TrackbarName, "S_MIN", S_MIN);
 	sprintf( TrackbarName, "S_MAX", S_MAX);
 	sprintf( TrackbarName, "V_MIN", V_MIN);
 	sprintf( TrackbarName, "V_MAX", V_MAX);
-	
+	*/
 	//create trackbars and insert them into window
 	//3 parameters are: the address of the variable that is changing when the trackbar is moved(eg.H_LOW),
 	//the max value the trackbar can move (eg. H_HIGH), 
@@ -135,27 +152,29 @@ void createTrackbars(){
 
 
 }
-void drawObject(Paper thePaper,Mat &frame){
+void drawObject(vector<Paper> thePapers,Mat &frame){
 
-	int x = thePaper.getXPos();
-	int y = thePaper.getYPos();
+	for(int i=0; i<thePapers.size(); i++)
+	{
+		int x = thePapers.at(i).getXPos();
+		int y = thePapers.at(i).getYPos();
 
-	circle(frame,Point(x,y),20,Scalar(0,255,0),2);
-		if(y-25>0)
-		line(frame,Point(x,y),Point(x,y-25),Scalar(0,255,0),2);
-		else line(frame,Point(x,y),Point(x,0),Scalar(0,255,0),2);
-		if(y+25<FRAME_HEIGHT)
-		line(frame,Point(x,y),Point(x,y+25),Scalar(0,255,0),2);
-		else line(frame,Point(x,y),Point(x,FRAME_HEIGHT),Scalar(0,255,0),2);
-		if(x-25>0)
-		line(frame,Point(x,y),Point(x-25,y),Scalar(0,255,0),2);
-		else line(frame,Point(x,y),Point(0,y),Scalar(0,255,0),2);
-		if(x+25<FRAME_WIDTH)
-		line(frame,Point(x,y),Point(x+25,y),Scalar(0,255,0),2);
-		else line(frame,Point(x,y),Point(FRAME_WIDTH,y),Scalar(0,255,0),2);
+		circle(frame,Point(x,y),20,Scalar(0,255,0),2);
+			if(y-25>0)
+			line(frame,Point(x,y),Point(x,y-25),Scalar(0,255,0),2);
+			else line(frame,Point(x,y),Point(x,0),Scalar(0,255,0),2);
+			if(y+25<FRAME_HEIGHT)
+			line(frame,Point(x,y),Point(x,y+25),Scalar(0,255,0),2);
+			else line(frame,Point(x,y),Point(x,FRAME_HEIGHT),Scalar(0,255,0),2);
+			if(x-25>0)
+			line(frame,Point(x,y),Point(x-25,y),Scalar(0,255,0),2);
+			else line(frame,Point(x,y),Point(0,y),Scalar(0,255,0),2);
+			if(x+25<FRAME_WIDTH)
+			line(frame,Point(x,y),Point(x+25,y),Scalar(0,255,0),2);
+			else line(frame,Point(x,y),Point(FRAME_WIDTH,y),Scalar(0,255,0),2);
 
-	putText(frame,intToString(x)+","+intToString(y),Point(x,y+30),1,1,Scalar(0,255,0),2);
-
+		putText(frame,intToString(x)+","+intToString(y),Point(x,y+30),1,1,Scalar(0,255,0),2);
+	}
 
 }
 void morphOps(Mat &thresh){
@@ -179,7 +198,7 @@ void morphOps(Mat &thresh){
 }
 void trackFilteredObject(Mat threshold,Mat HSV, Mat &cameraFeed){
 
-	Paper greenPaper;
+	vector <Paper> papers;
 
 	Mat temp;
 	threshold.copyTo(temp);
@@ -205,9 +224,13 @@ void trackFilteredObject(Mat threshold,Mat HSV, Mat &cameraFeed){
 				//we only want the object with the largest area so we safe a reference area each
 				//iteration and compare it to the area in the next iteration.
 				if(area>MIN_OBJECT_AREA){
+					
+					Paper paper;
 
-					greenPaper.setXPos(moment.m10/area);
-					greenPaper.setYPos(moment.m01/area);
+					paper.setXPos(moment.m10/area);
+					paper.setYPos(moment.m01/area);
+					
+					papers.push_back(paper);
 				
 					//x = moment.m10/area;
 					//y = moment.m01/area;
@@ -220,7 +243,7 @@ void trackFilteredObject(Mat threshold,Mat HSV, Mat &cameraFeed){
 			//let user know you found an object
 			if(objectFound ==true){
 				//draw object location on screen
-				drawObject(greenPaper,cameraFeed);}
+				drawObject(papers,cameraFeed);}
 
 		}else putText(cameraFeed,"TOO MUCH NOISE! ADJUST FILTER",Point(0,50),1,2,Scalar(0,0,255),2);
 	}
