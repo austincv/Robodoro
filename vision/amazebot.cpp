@@ -21,6 +21,8 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/opencv.hpp>
 
+#define PI 3.14159265
+
 using namespace cv;
 using namespace std;
 //initial min and max HSV filter values.
@@ -108,10 +110,11 @@ class Bot
 public:
 	Bot(void)
 	{
-
+		botFound = false;
 	}
 	~Bot(void)
 	{
+	
 	}
 
 	int getXPosFront()
@@ -183,7 +186,14 @@ public:
 		HSV_max_Back = max;
 	}
 	
-
+	bool isBotFound()
+	{
+		return botFound;
+	}
+	void setBotFound(bool found)
+	{
+		botFound = found;
+	}	
 private:
 
 	int xPosFront, yPosFront;
@@ -194,6 +204,8 @@ private:
 
 	Scalar HSV_min_Back;
 	Scalar HSV_max_Back;
+
+	bool botFound;
 
 };
 
@@ -270,6 +282,50 @@ void drawObject(vector<Paper> thePapers,Mat &frame){
 	}
 
 }
+
+void drawBot(Bot theBot,Mat &frame){
+
+	int x = theBot.getXPosFront();
+	int y = theBot.getYPosFront();
+
+	circle(frame,Point(x,y),20,Scalar(0,255,0),2);
+		if(y-25>0)
+		line(frame,Point(x,y),Point(x,y-25),Scalar(0,255,0),2);
+		else line(frame,Point(x,y),Point(x,0),Scalar(0,255,0),2);
+		if(y+25<FRAME_HEIGHT)
+		line(frame,Point(x,y),Point(x,y+25),Scalar(0,255,0),2);
+		else line(frame,Point(x,y),Point(x,FRAME_HEIGHT),Scalar(0,255,0),2);
+		if(x-25>0)
+		line(frame,Point(x,y),Point(x-25,y),Scalar(0,255,0),2);
+		else line(frame,Point(x,y),Point(0,y),Scalar(0,255,0),2);
+		if(x+25<FRAME_WIDTH)
+		line(frame,Point(x,y),Point(x+25,y),Scalar(0,255,0),2);
+		else line(frame,Point(x,y),Point(FRAME_WIDTH,y),Scalar(0,255,0),2);
+
+	putText(frame,intToString(x)+","+intToString(y)+"FRONT",Point(x,y+30),1,1,Scalar(0,255,0),2);
+
+	x = theBot.getXPosBack();
+	y = theBot.getYPosBack();
+
+	circle(frame,Point(x,y),20,Scalar(0,255,0),2);
+		if(y-25>0)
+		line(frame,Point(x,y),Point(x,y-25),Scalar(0,255,0),2);
+		else line(frame,Point(x,y),Point(x,0),Scalar(0,255,0),2);
+		if(y+25<FRAME_HEIGHT)
+		line(frame,Point(x,y),Point(x,y+25),Scalar(0,255,0),2);
+		else line(frame,Point(x,y),Point(x,FRAME_HEIGHT),Scalar(0,255,0),2);
+		if(x-25>0)
+		line(frame,Point(x,y),Point(x-25,y),Scalar(0,255,0),2);
+		else line(frame,Point(x,y),Point(0,y),Scalar(0,255,0),2);
+		if(x+25<FRAME_WIDTH)
+		line(frame,Point(x,y),Point(x+25,y),Scalar(0,255,0),2);
+		else line(frame,Point(x,y),Point(FRAME_WIDTH,y),Scalar(0,255,0),2);
+
+	putText(frame,intToString(x)+","+intToString(y)+"BACK",Point(x,y+30),1,1,Scalar(0,255,0),2);
+
+}
+
+
 void morphOps(Mat &thresh){
 
 	//create structuring element that will be used to "dilate" and "erode" image.
@@ -386,11 +442,6 @@ Bot trackBot(Mat thresholdFront,Mat thresholdBack,Mat HSV, Mat &cameraFeed){
 				}else frontFound = false;
 
 			}
-			//let user know you found an object
-			if(frontFound ==true){
-				//draw object location on screen
-				//drawObject(bot,cameraFeed);
-			}
 
 		}else putText(cameraFeed,"ADJUST BOT FRONT FILTER",Point(0,50),1,2,Scalar(0,0,255),2);
 	}
@@ -426,17 +477,19 @@ Bot trackBot(Mat thresholdFront,Mat thresholdBack,Mat HSV, Mat &cameraFeed){
 				}else backFound = false;
 
 			}
-			//let user know you found an object
-			if(frontFound ==true){
-				//draw object location on screen
-				//drawObject(bot,cameraFeed);
-			}
+
 
 		}else putText(cameraFeed,"ADJUST BOT BACK FILTER",Point(0,50),1,2,Scalar(0,0,255),2);
 	}
 
 //backend
 
+		//let user know you found an bot
+		if(frontFound ==true && backFound ==true){
+			bot.setBotFound(true);
+			//draw bot location on screen
+			drawBot(bot,cameraFeed);
+		}
 	return bot;
 }
 
@@ -529,6 +582,51 @@ int main(int argc, char* argv[])
 		
 		//track the bot
 		aMazeBot = trackBot(frontThreshold,backThreshold,HSV,cameraFeed);
+
+		if(aMazeBot.isBotFound())
+			cout<<"Bot Found\n";
+		cout<<papers.size()<<endl;
+		cout<<endl;
+			
+		if(aMazeBot.isBotFound() && papers.size() > 0)
+		{
+			//finding the rotation angle towards the papers
+			int x1,y1; //back of bot
+			int x2,y2; //front of bot
+			int x3,y3; //object
+		
+			x1 = aMazeBot.getXPosBack();
+			y1 = aMazeBot.getYPosBack();
+
+			x2 = aMazeBot.getXPosFront();
+			y2 = aMazeBot.getYPosFront();
+
+			x3 = papers.at(0).getXPos();
+			y3 = papers.at(0).getYPos();
+
+			//dot product to find the angle of rotation for the bot to reach the object
+			double dotProduct;
+			double denominator;
+			double numerator;
+			double angle;
+			
+			denominator = (sqrt((x3-x1)^2+(y3-y1)^2)*sqrt((x2-x1)^2+(y2-y1)^2));
+			numerator = ((x3-x1)*(x2-x1)+(y3-y1)*(y2-y1));
+			dotProduct = ((x3-x1)*(x2-x1)+(y3-y1)*(y2-y1))/(sqrt(pow((x3-x1),2)+pow((y3-y1),2))*sqrt(pow((x2-x1),2)+pow((y2-y1),2)));
+
+			//testing if the output is correct
+			cout<<"dotProduct :"<<dotProduct<<endl;
+			cout<<"numerator :"<<numerator<<endl;
+			cout<<"denominator :"<<denominator<<endl;
+			cout<<"("<<x1<<","<<y1<<")"<<"("<<x2<<","<<y2<<")"<<"("<<x3<<","<<y3<<")"<<endl;
+
+			angle = acos (dotProduct) * 180.0 / PI;
+			cout<<" Angle :"<<angle;
+
+			
+			
+				
+		}
 
 		//show frames 
 		//imshow(windowName2,threshold);
