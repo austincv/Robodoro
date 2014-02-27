@@ -39,7 +39,7 @@ const int FRAME_HEIGHT = 480;
 //max number of objects to be detected in frame
 const int MAX_NUM_OBJECTS=50;
 //minimum and maximum object area
-const int MIN_OBJECT_AREA = 40*40;
+const int MIN_OBJECT_AREA = 20*20;
 const int MAX_OBJECT_AREA = FRAME_HEIGHT*FRAME_WIDTH/1.5;
 //names that will appear at the top of each window
 const string windowName = "Original Image";
@@ -583,10 +583,8 @@ int main(int argc, char* argv[])
 		//track the bot
 		aMazeBot = trackBot(frontThreshold,backThreshold,HSV,cameraFeed);
 
-		if(aMazeBot.isBotFound())
-			cout<<"Bot Found\n";
-		cout<<papers.size()<<endl;
-		cout<<endl;
+		//cout<<papers.size()<<endl;
+		//cout<<endl;
 			
 		if(aMazeBot.isBotFound() && papers.size() > 0)
 		{
@@ -606,26 +604,62 @@ int main(int argc, char* argv[])
 
 			//dot product to find the angle of rotation for the bot to reach the object
 			double dotProduct;
-			double denominator;
-			double numerator;
 			double angle;
 			
-			denominator = (sqrt((x3-x1)^2+(y3-y1)^2)*sqrt((x2-x1)^2+(y2-y1)^2));
-			numerator = ((x3-x1)*(x2-x1)+(y3-y1)*(y2-y1));
+			
 			dotProduct = ((x3-x1)*(x2-x1)+(y3-y1)*(y2-y1))/(sqrt(pow((x3-x1),2)+pow((y3-y1),2))*sqrt(pow((x2-x1),2)+pow((y2-y1),2)));
 
 			//testing if the output is correct
-			cout<<"dotProduct :"<<dotProduct<<endl;
-			cout<<"numerator :"<<numerator<<endl;
-			cout<<"denominator :"<<denominator<<endl;
-			cout<<"("<<x1<<","<<y1<<")"<<"("<<x2<<","<<y2<<")"<<"("<<x3<<","<<y3<<")"<<endl;
+			//cout<<"dotProduct :"<<dotProduct<<endl;
+			//cout<<"("<<x1<<","<<y1<<")"<<"("<<x2<<","<<y2<<")"<<"("<<x3<<","<<y3<<")"<<endl;
 
 			angle = acos (dotProduct) * 180.0 / PI;
-			cout<<" Angle :"<<angle;
+			//cout<<" Angle :"<<(int)angle<<endl;
 
+			//cross product to find the left or right turn
+			double crossProduct;
+
+			crossProduct = (x2-x1)*(y3-y1)-(y2-y1)*(x3-x1);
 			
-			
+			//write output to file
+			   ofstream myfile;
+			   myfile.open ("directions");
+			int direction;
+			if(crossProduct>0)
+			{	
+				//cout<<"Right"<<endl;
+				cout<<-1*(int)angle<<endl;
+				direction = (int)(angle/4)+45;
+				//converting to range 0 to 90
 				
+			}			
+			else 
+			{
+				//cout<<"Left"<<endl;
+				cout<<(int)angle<<endl;
+				//converting to range 0 to 90
+				direction = (int)(angle/-4)+45;
+			}
+			
+
+			//check if direction has come straight
+			if(direction == 45)
+			{
+				direction = 92; // 92 is for moving straight
+			}
+			
+			myfile << direction;
+			//close the file
+			myfile.close();
+				
+		}
+		else
+		{	ofstream myfile;
+		 	myfile.open ("directions");
+			//bot not found so don't move
+			cout<<"0"<<endl;
+			myfile <<"45";
+			myfile.close();
 		}
 
 		//show frames 
