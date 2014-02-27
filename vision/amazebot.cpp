@@ -104,14 +104,104 @@ private:
 };
 
 
+class Bot
+{
+public:
+	Bot(void)
+	{
+
+	}
+	~Bot(void)
+	{
+	}
+
+	int getXPosFront()
+	{
+		return xPosFront;
+	}
+	void setXPosFront(int x)
+	{
+		xPosFront = x;
+	}
+	int getYPosFront()
+	{
+		return yPosFront;
+	}
+	void setYPosFront(int y)
+	{
+		yPosFront = y;
+	}
+
+
+	int getXPosBack()
+	{
+		return xPosBack;
+	}
+	void setXPosBack(int x)
+	{
+		xPosBack = x;
+	}
+	int getYPosBack()
+	{
+		return yPosBack;
+	}
+	void setYPosBack(int y)
+	{
+		yPosBack = y;
+	}
+
+	Scalar getHSV_min_Front()
+	{
+		return HSV_min_Front;
+	}
+	Scalar getHSV_max_Front()
+	{
+		return HSV_max_Front;
+	}
+	void setHSV_min_Front(Scalar min)
+	{
+		HSV_min_Front = min;
+	}
+	void setHSV_max_Front(Scalar max)
+	{
+		HSV_max_Front = max;
+	}
+
+	Scalar getHSV_min_Back()
+	{
+		return HSV_min_Back;
+	}
+	Scalar getHSV_max_Back()
+	{
+		return HSV_max_Back;
+	}
+	void setHSV_min_Back(Scalar min)
+	{
+		HSV_min_Back = min;
+	}
+	void setHSV_max_Back(Scalar max)
+	{
+		HSV_max_Back = max;
+	}
+	
+
+private:
+
+	int xPosFront, yPosFront;
+	int xPosBack, yPosBack;
+	string type;
+	Scalar HSV_min_Front;
+	Scalar HSV_max_Front;
+
+	Scalar HSV_min_Back;
+	Scalar HSV_max_Back;
+
+};
+
 
 void on_trackbar( int, void* )
 {//This function gets called whenever a
 	// trackbar position is changed
-
-
-
-
 
 }
 
@@ -196,7 +286,7 @@ void morphOps(Mat &thresh){
 
 
 }
-void trackFilteredObject(Mat threshold,Mat HSV, Mat &cameraFeed){
+void trackPapers(Mat threshold,Mat HSV, Mat &cameraFeed){
 
 	vector <Paper> papers;
 
@@ -252,7 +342,7 @@ void trackFilteredObject(Mat threshold,Mat HSV, Mat &cameraFeed){
 int main(int argc, char* argv[])
 {
 	//if we would like to calibrate our filter values, set to true.
-	bool calibrationMode = false;
+	bool calibrationMode = true;
 
 	//read calibrated data from file
 
@@ -316,7 +406,7 @@ int main(int argc, char* argv[])
 		inRange(HSV,Scalar(H_MIN,S_MIN,V_MIN),Scalar(H_MAX,S_MAX,V_MAX),threshold);
 		morphOps(threshold);
 		imshow(windowName2,threshold);
-		trackFilteredObject(threshold,HSV,cameraFeed);
+		trackPapers(threshold,HSV,cameraFeed);
 
 		//show frames 
 		//imshow(windowName2,threshold);
