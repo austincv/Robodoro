@@ -283,10 +283,9 @@ void morphOps(Mat &thresh){
 	dilate(thresh,thresh,dilateElement);
 	dilate(thresh,thresh,dilateElement);
 
-
-
 }
-void trackPapers(Mat threshold,Mat HSV, Mat &cameraFeed){
+
+vector<Paper> trackPapers(Mat threshold,Mat HSV, Mat &cameraFeed){
 
 	vector <Paper> papers;
 
@@ -337,6 +336,7 @@ void trackPapers(Mat threshold,Mat HSV, Mat &cameraFeed){
 
 		}else putText(cameraFeed,"TOO MUCH NOISE! ADJUST FILTER",Point(0,50),1,2,Scalar(0,0,255),2);
 	}
+	return papers;
 }
 
 int main(int argc, char* argv[])
