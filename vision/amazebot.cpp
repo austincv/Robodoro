@@ -103,7 +103,6 @@ private:
 
 };
 
-
 class Bot
 {
 public:
@@ -202,6 +201,10 @@ private:
 void on_trackbar( int, void* )
 {//This function gets called whenever a
 	// trackbar position is changed
+
+
+
+
 
 }
 
@@ -327,22 +330,120 @@ vector<Paper> trackPapers(Mat threshold,Mat HSV, Mat &cameraFeed){
 
 				}else objectFound = false;
 
-
 			}
 			//let user know you found an object
 			if(objectFound ==true){
 				//draw object location on screen
-				drawObject(papers,cameraFeed);}
+				drawObject(papers,cameraFeed);
+			}
 
 		}else putText(cameraFeed,"TOO MUCH NOISE! ADJUST FILTER",Point(0,50),1,2,Scalar(0,0,255),2);
 	}
 	return papers;
 }
 
+//trackBot
+Bot trackBot(Mat thresholdFront,Mat thresholdBack,Mat HSV, Mat &cameraFeed){
+
+	Bot bot;
+
+	//these two vectors needed for output of findContours
+	vector< vector<Point> > contours;
+	vector<Vec4i> hierarchy;
+
+	double refArea = 0;
+	bool frontFound = false;
+	bool backFound = false;
+
+	//For finding Front of the bot
+
+	//find contours of filtered image using openCV findContours function
+	findContours(thresholdFront,contours,hierarchy,CV_RETR_CCOMP,CV_CHAIN_APPROX_SIMPLE );
+	//use moments method to find our filtered object
+
+	if (hierarchy.size() > 0) {
+		int numObjects = hierarchy.size();
+		//if number of objects greater than MAX_NUM_OBJECTS we have a noisy filter
+		if(numObjects<MAX_NUM_OBJECTS){
+			for (int index = 0; index >= 0; index = hierarchy[index][0]) {
+
+				Moments moment = moments((cv::Mat)contours[index]);
+				double area = moment.m00;
+
+				//if the area is less than 20 px by 20px then it is probably just noise
+				//if the area is the same as the 3/2 of the image size, probably just a bad filter
+				//we only want the object with the largest area so we safe a reference area each
+				//iteration and compare it to the area in the next iteration.
+				if(area>MIN_OBJECT_AREA){
+					
+					bot.setXPosFront(moment.m10/area);
+					bot.setYPosFront(moment.m01/area);
+							
+					//x = moment.m10/area;
+					//y = moment.m01/area;
+					frontFound = true;
+
+				}else frontFound = false;
+
+			}
+			//let user know you found an object
+			if(frontFound ==true){
+				//draw object location on screen
+				//drawObject(bot,cameraFeed);
+			}
+
+		}else putText(cameraFeed,"ADJUST BOT FRONT FILTER",Point(0,50),1,2,Scalar(0,0,255),2);
+	}
+
+//back
+
+	//find contours of filtered image using openCV findContours function
+	findContours(thresholdBack,contours,hierarchy,CV_RETR_CCOMP,CV_CHAIN_APPROX_SIMPLE );
+	//use moments method to find our filtered object
+
+	if (hierarchy.size() > 0) {
+		int numObjects = hierarchy.size();
+		//if number of objects greater than MAX_NUM_OBJECTS we have a noisy filter
+		if(numObjects<MAX_NUM_OBJECTS){
+			for (int index = 0; index >= 0; index = hierarchy[index][0]) {
+
+				Moments moment = moments((cv::Mat)contours[index]);
+				double area = moment.m00;
+
+				//if the area is less than 20 px by 20px then it is probably just noise
+				//if the area is the same as the 3/2 of the image size, probably just a bad filter
+				//we only want the object with the largest area so we safe a reference area each
+				//iteration and compare it to the area in the next iteration.
+				if(area>MIN_OBJECT_AREA){
+					
+					bot.setXPosBack(moment.m10/area);
+					bot.setYPosBack(moment.m01/area);
+							
+					//x = moment.m10/area;
+					//y = moment.m01/area;
+					backFound = true;
+
+				}else backFound = false;
+
+			}
+			//let user know you found an object
+			if(frontFound ==true){
+				//draw object location on screen
+				//drawObject(bot,cameraFeed);
+			}
+
+		}else putText(cameraFeed,"ADJUST BOT BACK FILTER",Point(0,50),1,2,Scalar(0,0,255),2);
+	}
+
+//backend
+
+	return bot;
+}
+
 int main(int argc, char* argv[])
 {
 	//if we would like to calibrate our filter values, set to true.
-	bool calibrationMode = true;
+	bool calibrationMode = false;
 
 	//read calibrated data from file
 
@@ -380,6 +481,8 @@ int main(int argc, char* argv[])
 	//Matrix to store each frame of the webcam feed
 	Mat cameraFeed;
 	Mat threshold;
+	Mat frontThreshold;
+	Mat backThreshold;
 	Mat HSV;
 
 	if(calibrationMode){
@@ -396,6 +499,11 @@ int main(int argc, char* argv[])
 	//start an infinite loop where webcam feed is copied to cameraFeed matrix
 	//all of our operations will be performed within this loop
 	while(1){
+
+		//vector for storing papers
+		vector<Paper> papers;
+		Bot aMazeBot;
+		
 		//store image to matrix
 		capture.read(cameraFeed);
 		//convert frame from BGR to HSV colorspace
@@ -403,10 +511,24 @@ int main(int argc, char* argv[])
 
 
 		//track objects based on the HSV values.
-		inRange(HSV,Scalar(H_MIN,S_MIN,V_MIN),Scalar(H_MAX,S_MAX,V_MAX),threshold);
+		//inRange(HSV,Scalar(H_MIN,S_MIN,V_MIN),Scalar(H_MAX,S_MAX,V_MAX),threshold);
+		inRange(HSV,Scalar(0,81,0),Scalar(33,256,256),threshold);
 		morphOps(threshold);
-		imshow(windowName2,threshold);
-		trackPapers(threshold,HSV,cameraFeed);
+		imshow("objects",threshold);
+		papers = trackPapers(threshold,HSV,cameraFeed);
+
+		//create threshold for bot front - green
+		inRange(HSV,Scalar(79,42,0),Scalar(97,229,256),frontThreshold);
+		morphOps(frontThreshold);
+		imshow("front",frontThreshold);
+
+		//create threshold for bot back - blue
+		inRange(HSV,Scalar(95,42,4),Scalar(114,229,256),backThreshold);
+		morphOps(backThreshold);
+		imshow("back",backThreshold);
+		
+		//track the bot
+		aMazeBot = trackBot(frontThreshold,backThreshold,HSV,cameraFeed);
 
 		//show frames 
 		//imshow(windowName2,threshold);
