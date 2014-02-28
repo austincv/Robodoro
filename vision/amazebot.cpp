@@ -552,10 +552,13 @@ int main(int argc, char* argv[])
 	capture.set(CV_CAP_PROP_FRAME_HEIGHT,FRAME_HEIGHT);
 	//start an infinite loop where webcam feed is copied to cameraFeed matrix
 	//all of our operations will be performed within this loop
-	while(1){
 
 		//vector for storing papers
 		vector<Paper> papers;
+
+	while(1){
+
+
 		Bot aMazeBot;
 		
 		//store image to matrix
@@ -564,13 +567,19 @@ int main(int argc, char* argv[])
 		cvtColor(cameraFeed,HSV,COLOR_BGR2HSV);
 
 
-		//track objects based on the HSV values.
+		//track objects based on the HSV values. - red
 		//inRange(HSV,Scalar(H_MIN,S_MIN,V_MIN),Scalar(H_MAX,S_MAX,V_MAX),threshold);
-		inRange(HSV,Scalar(0,81,0),Scalar(33,256,256),threshold);
-		morphOps(threshold);
-		imshow("objects",threshold);
-		papers = trackPapers(threshold,HSV,cameraFeed);
-
+		if(!identifiedObjects)
+		{
+			inRange(HSV,Scalar(0,81,0),Scalar(33,256,256),threshold);
+			morphOps(threshold);
+			imshow("objects",threshold);
+			papers = trackPapers(threshold,HSV,cameraFeed);
+		}
+		else
+		{	//draw the saved objects	
+			drawObject(papers,cameraFeed);
+		}
 		//create threshold for bot front - green
 		inRange(HSV,Scalar(79,42,0),Scalar(97,229,256),frontThreshold);
 		morphOps(frontThreshold);
