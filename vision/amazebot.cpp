@@ -48,6 +48,7 @@ const string windowName2 = "Thresholded Image";
 const string windowName3 = "After Morphological Operations";
 const string trackbarWindowName = "Trackbars";
 
+bool identifiedObjects = false;
 
 //The class for our objects - this will be papers of different colors and shapes
 
@@ -671,9 +672,12 @@ int main(int argc, char* argv[])
 
 		//delay 30ms so that screen can refresh.
 		//image will not appear without this waitKey() command
-		waitKey(30);
-	}
+	       int c = waitKey(30);
+	       if( (char)c == 'c' ) { break; }
+	       if( (char)c == 'i' ) { identifiedObjects = true; }
+	       if( (char)c == 'u' ) { identifiedObjects = false; }
 
+	}
 
 	return 0;
 }
