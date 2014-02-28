@@ -49,6 +49,7 @@ const string windowName3 = "After Morphological Operations";
 const string trackbarWindowName = "Trackbars";
 
 bool identifiedObjects = false;
+bool allObjectsTraversed = false;
 
 //The class for our objects - this will be papers of different colors and shapes
 
@@ -96,6 +97,15 @@ public:
 	{
 		HSV_max = max;
 	}
+
+	bool isBotReached()
+	{
+		return botReached;
+	}
+	void setBotReached(bool reached)
+	{
+		botReached = reached;
+	}
 	
 private:
 
@@ -103,6 +113,8 @@ private:
 	string type;
 	Scalar HSV_min;
 	Scalar HSV_max;
+	
+	bool botReached;
 
 };
 
@@ -265,21 +277,28 @@ void drawObject(vector<Paper> thePapers,Mat &frame){
 		int x = thePapers.at(i).getXPos();
 		int y = thePapers.at(i).getYPos();
 
-		circle(frame,Point(x,y),20,Scalar(0,255,0),2);
-			if(y-25>0)
-			line(frame,Point(x,y),Point(x,y-25),Scalar(0,255,0),2);
-			else line(frame,Point(x,y),Point(x,0),Scalar(0,255,0),2);
-			if(y+25<FRAME_HEIGHT)
-			line(frame,Point(x,y),Point(x,y+25),Scalar(0,255,0),2);
-			else line(frame,Point(x,y),Point(x,FRAME_HEIGHT),Scalar(0,255,0),2);
-			if(x-25>0)
-			line(frame,Point(x,y),Point(x-25,y),Scalar(0,255,0),2);
-			else line(frame,Point(x,y),Point(0,y),Scalar(0,255,0),2);
-			if(x+25<FRAME_WIDTH)
-			line(frame,Point(x,y),Point(x+25,y),Scalar(0,255,0),2);
-			else line(frame,Point(x,y),Point(FRAME_WIDTH,y),Scalar(0,255,0),2);
+		Scalar color;
+         if(!thePapers.at(i).isBotReached())//if not reached
+		color = Scalar(0,0,255);
+	 else
+		color = Scalar(255,255,0);//if reached
 
-		putText(frame,intToString(x)+","+intToString(y),Point(x,y+30),1,1,Scalar(0,255,0),2);
+
+		circle(frame,Point(x,y),20,color,2);
+			if(y-25>0)
+			line(frame,Point(x,y),Point(x,y-25),color,2);
+			else line(frame,Point(x,y),Point(x,0),color,2);
+			if(y+25<FRAME_HEIGHT)
+			line(frame,Point(x,y),Point(x,y+25),color,2);
+			else line(frame,Point(x,y),Point(x,FRAME_HEIGHT),color,2);
+			if(x-25>0)
+			line(frame,Point(x,y),Point(x-25,y),color,2);
+			else line(frame,Point(x,y),Point(0,y),color,2);
+			if(x+25<FRAME_WIDTH)
+			line(frame,Point(x,y),Point(x+25,y),color,2);
+			else line(frame,Point(x,y),Point(FRAME_WIDTH,y),color,2);	
+			putText(frame,intToString(x)+","+intToString(y),Point(x,y+30),1,1,color,2);
+
 	}
 
 }
@@ -580,6 +599,7 @@ int main(int argc, char* argv[])
 		{	//draw the saved objects	
 			drawObject(papers,cameraFeed);
 		}
+
 		//create threshold for bot front - green
 		inRange(HSV,Scalar(79,42,0),Scalar(97,229,256),frontThreshold);
 		morphOps(frontThreshold);
@@ -609,13 +629,38 @@ int main(int argc, char* argv[])
 			x2 = aMazeBot.getXPosFront();
 			y2 = aMazeBot.getYPosFront();
 
-			x3 = papers.at(0).getXPos();
-			y3 = papers.at(0).getYPos();
+			double distanceToObj;
+			//find the object coordinate to navigate to
+			for(int i=0; i<papers.size();i++)
+			{
+				if(!papers.at(i).isBotReached()) // if the bot has not reached the object
+				{
+					x3 = papers.at(i).getXPos();
+					y3 = papers.at(i).getYPos();
+					distanceToObj = pow((x2-x3),2)+pow((y2-y3),2);
+					cout<<"Square of the dist to obj : "<<distanceToObj<<endl;
 
+					if(distanceToObj < 2000)
+					{	//we have reached so find the next object
+						papers.at(i).setBotReached(true);
+						if(i == (papers.size()-1))//check if the object is the last
+						{				
+							//this was the last object			
+							allObjectsTraversed = true;
+						}
+					}
+					else
+					{
+						break; //come out of the for loop and instruct the bot to get to this 
+					}
+				}
+			}
 			//dot product to find the angle of rotation for the bot to reach the object
 			double dotProduct;
 			double angle;
-			
+
+
+
 			
 			dotProduct = ((x3-x1)*(x2-x1)+(y3-y1)*(y2-y1))/(sqrt(pow((x3-x1),2)+pow((y3-y1),2))*sqrt(pow((x2-x1),2)+pow((y2-y1),2)));
 
@@ -631,40 +676,53 @@ int main(int argc, char* argv[])
 
 			crossProduct = (x2-x1)*(y3-y1)-(y2-y1)*(x3-x1);
 			
-			//write output to file
-			   ofstream myfile;
-			   myfile.open ("directions");
-			int direction;
-			if(crossProduct>0)
-			{	
-				//cout<<"Right"<<endl;
-				cout<<-1*(int)angle<<endl;
-				direction = (int)(angle/4)+45;
-				//converting to range 0 to 90
-				
-			}			
-			else 
+			if(identifiedObjects)
 			{
-				//cout<<"Left"<<endl;
-				cout<<(int)angle<<endl;
-				//converting to range 0 to 90
-				direction = (int)(angle/-4)+45;
-			}
+				//write output to file
+				   ofstream myfile;
+				   myfile.open ("directions");
+				int direction;
+				if(crossProduct>0)
+				{	
+					//cout<<"Right"<<endl;
+					cout<<-1*(int)angle<<endl;
+					direction = (int)(angle/4)+45;
+					//converting to range 0 to 90
+				
+				}			
+				else 
+				{
+					//cout<<"Left"<<endl;
+					cout<<(int)angle<<endl;
+					//converting to range 0 to 90
+					direction = (int)(angle/-4)+45;
+				}
 			
 
-			//check if direction has come straight
-			if(direction == 45)
-			{
-				direction = 92; // 92 is for moving straight
-			}
+				//check if direction has come straight
+				if(direction == 45)
+				{
+					direction = 92; // 92 is for moving straight
+				}
 			
-			myfile << direction;
-			//close the file
-			myfile.close();
+				myfile << direction;
+				//close the file
+				myfile.close();
+			}
+			else //we havent found objects so just wait
+			{
+				ofstream myfile;
+			 	myfile.open ("directions");
+				//bot not found so don't move
+				cout<<"0"<<endl;
+				myfile <<"45";
+				myfile.close();
+			}
 				
 		}
 		else
-		{	ofstream myfile;
+		{
+			ofstream myfile;
 		 	myfile.open ("directions");
 			//bot not found so don't move
 			cout<<"0"<<endl;
