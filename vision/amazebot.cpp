@@ -50,6 +50,11 @@ const string trackbarWindowName = "Trackbars";
 
 bool identifiedObjects = false;
 bool allObjectsTraversed = false;
+bool taskDone = false;
+int startX;
+int startY;
+
+int X2,Y2; //front of bot
 
 //The class for our objects - this will be papers of different colors and shapes
 
@@ -601,12 +606,12 @@ int main(int argc, char* argv[])
 		}
 
 		//create threshold for bot front - green
-		inRange(HSV,Scalar(79,42,0),Scalar(97,229,256),frontThreshold);
+		inRange(HSV,Scalar(52,47,0),Scalar(96,256,256),frontThreshold);
 		morphOps(frontThreshold);
 		imshow("front",frontThreshold);
 
 		//create threshold for bot back - blue
-		inRange(HSV,Scalar(95,42,4),Scalar(114,229,256),backThreshold);
+		inRange(HSV,Scalar(102,102,4),Scalar(131,256,256),backThreshold);
 		morphOps(backThreshold);
 		imshow("back",backThreshold);
 		
@@ -629,8 +634,15 @@ int main(int argc, char* argv[])
 			x2 = aMazeBot.getXPosFront();
 			y2 = aMazeBot.getYPosFront();
 
-			double distanceToObj;
+			//for capturing start position
+			X2=x2;
+			Y2=y2;
+
+			double distanceToObj=1000000;
+			double distanceToNearObj=1000000;
+			int nearestObjIndex=0;
 			//find the object coordinate to navigate to
+			/*
 			for(int i=0; i<papers.size();i++)
 			{
 				if(!papers.at(i).isBotReached()) // if the bot has not reached the object
@@ -654,12 +666,70 @@ int main(int argc, char* argv[])
 						break; //come out of the for loop and instruct the bot to get to this 
 					}
 				}
+			}*/
+
+
+
+			//new code for finding the nearest obj
+			int totalObj = 0;
+			for(int i=0; i<papers.size(); i++)
+			{	
+			
+					x3 = papers.at(i).getXPos();
+					y3 = papers.at(i).getYPos();
+					distanceToObj = pow((x2-x3),2)+pow((y2-y3),2);
+
+					if((distanceToObj < distanceToNearObj) && !papers.at(i).isBotReached()) //update distance to nearest obj
+					{
+						distanceToNearObj = distanceToObj;
+						nearestObjIndex = i;
+					}
+
+					if(distanceToObj < 2000)
+					{	//we have reached so find the next object
+						papers.at(i).setBotReached(true);
+					}
+					
 			}
+
+			for(int i=0; i<papers.size(); i++)
+			{
+				if(papers.at(i).isBotReached())
+				{
+					totalObj++;
+				}
+			}
+			cout<<"totalObj"<<totalObj;
+			if(totalObj == papers.size() - 1)
+				allObjectsTraversed = true;
+
+
+			//set the nearestObj
+			if(!allObjectsTraversed)
+			{
+				x3 = papers.at(nearestObjIndex).getXPos();
+				y3 = papers.at(nearestObjIndex).getYPos();
+			}
+			else
+			{
+				x3 = startX;
+				y3 = startY;
+				distanceToObj = pow((x2-x3),2)+pow((y2-y3),2); 
+				if(distanceToObj < 2000) //check if we reached the start
+				{ taskDone = true;}
+			}
+			//draw line from bot to nearest object
+			if(!allObjectsTraversed)
+			{
+				line(cameraFeed,Point(x2,y2),Point(x3,y3),Scalar(0,255,255),2);
+			}//else
+			{
+			//	putText(cameraFeed,"Done!!",Point(x3,y3),1,1,Scalar(0,255,0),2);
+			}
+
 			//dot product to find the angle of rotation for the bot to reach the object
 			double dotProduct;
 			double angle;
-
-
 
 			
 			dotProduct = ((x3-x1)*(x2-x1)+(y3-y1)*(y2-y1))/(sqrt(pow((x3-x1),2)+pow((y3-y1),2))*sqrt(pow((x2-x1),2)+pow((y2-y1),2)));
@@ -676,7 +746,7 @@ int main(int argc, char* argv[])
 
 			crossProduct = (x2-x1)*(y3-y1)-(y2-y1)*(x3-x1);
 			
-			if(identifiedObjects)
+			if(identifiedObjects && (!allObjectsTraversed)) //if objects have been identified and all of them have not been traversed
 			{
 				//write output to file
 				   ofstream myfile;
@@ -709,7 +779,7 @@ int main(int argc, char* argv[])
 				//close the file
 				myfile.close();
 			}
-			else //we havent found objects so just wait
+			else //we havent found objects or we traversed all so just wait
 			{
 				ofstream myfile;
 			 	myfile.open ("directions");
@@ -718,6 +788,40 @@ int main(int argc, char* argv[])
 				myfile <<"45";
 				myfile.close();
 			}
+				//returning to base
+				if(allObjectsTraversed && false)
+				{
+						//write output to file
+						   ofstream myfile;
+						   myfile.open ("directions");
+						int direction;
+						if(crossProduct>0)
+						{	
+							//cout<<"Right"<<endl;
+							cout<<-1*(int)angle<<endl;
+							direction = (int)(angle/4)+45;
+							//converting to range 0 to 90
+				
+						}			
+						else 
+						{
+							//cout<<"Left"<<endl;
+							cout<<(int)angle<<endl;
+							//converting to range 0 to 90
+							direction = (int)(angle/-4)+45;
+						}
+			
+
+						//check if direction has come straight
+						if(direction == 45)
+						{
+							direction = 92; // 92 is for moving straight
+						}
+			
+						myfile << direction;
+						//close the file
+						myfile.close();
+				}//returning to base end
 				
 		}
 		else
@@ -730,6 +834,7 @@ int main(int argc, char* argv[])
 			myfile.close();
 		}
 
+
 		//show frames 
 		//imshow(windowName2,threshold);
 
@@ -739,10 +844,12 @@ int main(int argc, char* argv[])
 
 		//delay 30ms so that screen can refresh.
 		//image will not appear without this waitKey() command
+	       if(taskDone){break;} //Yipieee Kayee M***********!!!
 	       int c = waitKey(30);
 	       if( (char)c == 'c' ) { break; }
-	       if( (char)c == 'i' ) { identifiedObjects = true; }
+	       if( (char)c == 'i' ) { identifiedObjects = true; startX = X2; startY = Y2; }
 	       if( (char)c == 'u' ) { identifiedObjects = false; }
+		
 
 	}
 

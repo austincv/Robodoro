@@ -7,7 +7,7 @@ import java.io.InputStreamReader;
 import java.net.*;
 
 public class AMazeBotServer {
-	public static String FILE = "/home/austin/BotDirections/directions";
+	public static String FILE = "/home/austin/Git/Robodoro/vision/directions";
 	public static final Integer SERVER_PORT = 6789;
 
 	public static void main(String[] args) throws IOException 
@@ -75,7 +75,7 @@ public class AMazeBotServer {
 			// Send Input to Client
 			System.out.println("Sending: " + input);
 			outToClient.write(input);
-			//outToClient.writeChars(line);
+
 			
 			//wait for instruction to complete execution
 			clientMsg = inFromClient.readLine();

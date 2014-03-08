@@ -24,7 +24,7 @@ public class AMazeBot
 {
     static RegulatedMotor leftMotor = Motor.A;
     static RegulatedMotor rightMotor = Motor.B;
-    static final int oneRotation = 5*360;
+    static final int oneRotation = 5;
 
     
     public static final String SERVER_IP = "192.168.137.32";
@@ -76,43 +76,49 @@ public class AMazeBot
 		Button.LEDPattern(5);
         Delay.msDelay(100);
     
-
+        DataOutputStream outToServer = new DataOutputStream(clientSocket.getOutputStream());
 		while(true){
 
 			// Receive Instruction from Server
 			direction = inFromServer.read();
-			System.out.println("FROM SERVER: " + direction);
-			
-			DataOutputStream outToServer = new DataOutputStream(clientSocket.getOutputStream());
+
+			//direction = Integer.parseInt(inFromServer.readLine());
+			//System.out.println("FROM SERVER Raw: " + msgFromServer);
+			System.out.println("FROM SERVER Int: " + direction);
 			
 
 			// ----------------------------------------------------
 			// Write Instruction Mapping for Robot Movement Here
 			// ----------------------------------------------------
-
-			switch(direction)
+			if(direction <= 90)
 			{
-			case 1:
-				turn(0.5,false);
+				//we are expecting values from 0 to 90
+				//turn function turns in degrees
+				//0 to 45 is mapped to -180 to 0
+				//46 to 90 is mapped to 1 to 180
+				System.out.println("Turning: "+(direction-45)*4+"degrees");
+				turn((direction-45)*4,false);
+				Delay.msDelay(100);
 				outToServer.writeBytes("action done" + '\n');
-				break;
-			case 2:
-				turn(-0.5,false);
+			}else
+			if(direction == 92)
+			{
+				forward(100,false);
 				outToServer.writeBytes("action done" + '\n');
-				break;
-			case 3:
-
-				break;
-			case 4:
-
-				break;
-			case 5:
-
-				break;
+			}
+			else
+			if(direction == 93)
+			{
+				reverse(100,false);
+				outToServer.writeBytes("action done" + '\n');
+			}
+			else
+			{
+				outToServer.writeBytes("action not done - unexpected value" + '\n');
 			}
 
 			// Instruction to Abort Connection
-			if(direction==0){
+			if(direction==91){
 				System.out.println("Received Instruction to Abort..");
 				break;
 			}
@@ -133,20 +139,20 @@ public class AMazeBot
     }
 	
     /**
-     * numberOfTimes : negative turns left
-     * 				 : positive turns right
+     * degrees 	: negative turns left
+     * 			: positive turns right
      * 
      * returnNow :true returns immediately
      * 
      * This function resets the TachoCount
      */			
-    public static void turn(double numberOfTimes, boolean returnNow)
+    public static void turn(double degrees, boolean returnNow)
     {
 	    leftMotor.resetTachoCount();
 	    rightMotor.resetTachoCount();
 	    
-	    leftMotor.rotateTo((int)(oneRotation*numberOfTimes), true);
-	    rightMotor.rotateTo((int)(-oneRotation*numberOfTimes), returnNow);
+	    leftMotor.rotateTo((int)(oneRotation*degrees), true);
+	    rightMotor.rotateTo((int)(-oneRotation*degrees), returnNow);
     }
     
     public static void forward(double distance, boolean returnNow)
